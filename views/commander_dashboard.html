@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commander Operational Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500;700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIINfBIHUPz0xy++7D6YWE78vQjM0mjzYw4="
+        crossorigin=""/>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(-45deg, #0d1117, #1c1c2b);
+            color: #e6edf3;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #1f6feb;
+            padding-bottom: 10px;
+        }
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: #1f6feb;
+            font-size: 1.8rem;
+        }
+        .logout-btn {
+            background: #ff3b3b;
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .logout-btn:hover { background: #cc0000; }
+
+        /* Soldier Table Styles */
+        #soldierTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        #soldierTable th, #soldierTable td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #1f6feb40;
+            color: #e6edf3;
+            font-size: 0.9rem;
+        }
+        #soldierTable th {
+            background-color: #1f6feb;
+            color: #fff;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        /* Color Coding for Health Status */
+        .status-cell {
+            font-weight: bold;
+            transition: background-color 0.5s;
+        }
+        .status-cell.CRITICAL_RED { 
+            background-color: #8b0000; /* Darker Red for high priority */
+            color: #fff;
+        }
+        .status-cell.ALERT_LIGHT_RED { 
+            background-color: #ff5555; /* Light Red for alerts */
+            color: #0d1117;
+        }
+        .status-cell.OFFLINE { 
+            background-color: #343a40; /* Grey for offline */
+            color: #fff;
+        }
+        .status-cell.NORMAL {
+            background-color: #00cc66; /* Green for normal */
+            color: #0d1117;
+        }
+
+        /* Checkbox for Field Selection (Requirement 1) */
+        .field-selector {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #soldierMap {
+            height: 500px; /* Define a fixed height for the map */
+            width: 100%;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            border: 1px solid #1f6feb;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Commander Operational Dashboard</h1>
+        <form action="/logout" method="POST" style="display:inline;">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+    </header>
+
+    <div class="field-selector">
+        <h2>Soldiers Health Status</h2>
+        <label>
+        <input type="checkbox" id="fieldFilter" onchange="renderTable()"> 
+        Show only **CURRENTLY DEPLOYED** Soldiers
+    </label>
+    <button onclick="openDeploymentModal()" style="background:#1f6feb; color:white; padding:8px 15px; border:none; border-radius:5px;">
+        Deploy Selected Soldiers
+    </button>
+    </div>
+
+ <table id="soldierTable">
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"> Select</th> 
+            <th>Service No.</th>
+            <th>Name</th>
+            <th>Heart Rate (BPM)</th>
+            <th>Blood Pressure (Sys)</th>
+            <th>Temperature (°C)</th>
+            <th>Location (Lat/Long)</th>
+            <th>Deployment End</th> 
+            <th>Health Status</th>
+            <th>Last Updated</th>
+        </tr>
+    </thead>
+    <tbody id="soldierTableBody">
+        <tr><td colspan="10" style="text-align: center;">Loading soldier data...</td></tr>
+    </tbody>
+</table>
+
+    <div id="soldierMap"></div>
+
+    <div id="deploymentModal" style="display:none; position:fixed; z-index:10; left:0; top:0; width:100%; height:100%; overflow:auto; background-color: rgba(0,0,0,0.7);">
+    <div style="background-color: #1c1c2b; margin: 10% auto; padding: 30px; border: 1px solid #1f6feb; width: 80%; max-width: 400px; border-radius: 10px;">
+        <h3 style="color:#1f6feb;">Set Deployment Schedule</h3>
+        <p>Selected Soldiers: <span id="selectedSoldierCount" style="font-weight:bold;">0</span></p>
+        <label>Start Date/Time:</label>
+        <input type="datetime-local" id="startTimeInput" required style="width:100%; padding:8px; margin-bottom:10px; background:#0d1117; color:#e6edf3; border: 1px solid #1f6feb;">
+        <label>End Date/Time:</label>
+        <input type="datetime-local" id="endTimeInput" required style="width:100%; padding:8px; margin-bottom:20px; background:#0d1117; color:#e6edf3; border: 1px solid #1f6feb;">
+        
+        <button onclick="submitDeployment()" style="background:#00cc66; color:white; padding:10px; border:none; border-radius:5px; margin-right: 10px;">Deploy</button>
+        <button onclick="document.getElementById('deploymentModal').style.display='none'" style="background:#ff3b3b; color:white; padding:10px; border:none; border-radius:5px;">Cancel</button>
+    </div>
+</div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20n64zGk05T/c82hI8+C7h9Gg9E0+8v4s9x8d3HwF4M="
+        crossorigin=""></script>
+
+<script>
+    let allSoldiersData = []; 
+    let selectedSoldiers = []; // Global array to track selected soldiers
+    let soldierMap;
+    let markerLayerGroup = L.layerGroup(); 
+
+    // Function to handle the color change logic (Unchanged)
+    function getStatusClass(status) {
+        return status;
+    }
+
+    // =========================================================================
+    // == MAP FUNCTIONS (NEW) ==
+    // =========================================================================
+
+    function initMap() {
+        soldierMap = L.map('soldierMap').setView([20.5937, 78.9629], 5); 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(soldierMap);
+        markerLayerGroup.addTo(soldierMap);
+    }
+    
+    function createHealthIcon(colorCode) {
+        return L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style='background-color: ${colorCode}; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px ${colorCode};'></div>`,
+            iconSize: [15, 15],
+            iconAnchor: [7, 7]
+        });
+    }
+
+    function updateMap() {
+        markerLayerGroup.clearLayers(); 
+        let activeSoldiers = [];
+
+        allSoldiersData.forEach(soldier => {
+            const { lat, long } = soldier.vitals;
+            
+            if (soldier.isCurrentlyDeployed && lat !== 'N/A' && long !== 'N/A') {
+                const soldierLat = Number(lat);
+                const soldierLong = Number(long);
+
+                if (!isNaN(soldierLat) && !isNaN(soldierLong)) {
+                    activeSoldiers.push([soldierLat, soldierLong]); 
+                    const markerColor = soldier.color; 
+                    const markerIcon = createHealthIcon(markerColor);
+
+                    const marker = L.marker([soldierLat, soldierLong], { icon: markerIcon });
+                    
+                    marker.bindPopup(`
+                        <b>Service No: ${soldier.serviceNumber}</b><br>
+                        Name: ${soldier.fullName}<br>
+                        Deployment End: ${soldier.deployment.endTime ? new Date(soldier.deployment.endTime).toLocaleString() : 'N/A'}<br>
+                        Health: <span style="color: ${markerColor};">${soldier.status.replace('_', ' ')}</span><br>
+                        HR: ${soldier.vitals.heartbeat} | Temp: ${soldier.vitals.temp}°C
+                    `);
+                    markerLayerGroup.addLayer(marker);
+                }
+            }
+        });
+
+        if (activeSoldiers.length > 0) {
+            const bounds = L.latLngBounds(activeSoldiers);
+            soldierMap.whenReady(function() {
+                 soldierMap.fitBounds(bounds, { padding: [50, 50] });
+            });
+        }
+    }
+
+
+    // =========================================================================
+    // == TABLE & DATA FETCH FUNCTIONS ==
+    // =========================================================================
+
+    // NEW: Function to handle the Field Status Toggle (Updated to use Deployment)
+    async function toggleFieldStatus(serviceNumber, currentStatus) {
+        // This function is no longer used for deployment. It was used for isInField, 
+        // but now deployment is set via the Modal and submitDeployment().
+        // We will repurpose this API call to clear deployment, if needed in the future.
+        console.warn("Toggle field status button is deprecated. Use 'Deploy Selected Soldiers' modal.");
+    }
+
+
+    // Function to handle the "Select All" checkbox
+    function toggleSelectAll() {
+        const isChecked = document.getElementById('selectAll').checked;
+        selectedSoldiers = [];
+
+        // Clear and then re-populate the selectedSoldiers array based on the 'Select All' state
+        document.querySelectorAll('#soldierTableBody input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = isChecked;
+            if (isChecked) {
+                const serviceNumber = checkbox.getAttribute('data-service-number');
+                if (serviceNumber && !selectedSoldiers.includes(serviceNumber)) {
+                    selectedSoldiers.push(serviceNumber);
+                }
+            }
+        });
+        document.getElementById('selectedSoldierCount').textContent = selectedSoldiers.length;
+    }
+
+    // Function to handle single soldier selection (called on checkbox click)
+    function toggleSoldierSelection(serviceNumber, isChecked) {
+        if (isChecked) {
+            if (!selectedSoldiers.includes(serviceNumber)) {
+                selectedSoldiers.push(serviceNumber);
+            }
+        } else {
+            selectedSoldiers = selectedSoldiers.filter(sn => sn !== serviceNumber);
+        }
+        // Update the main "Select All" checkbox state
+        document.getElementById('selectAll').checked = selectedSoldiers.length === allSoldiersData.length;
+        document.getElementById('selectedSoldierCount').textContent = selectedSoldiers.length; // Update modal count
+    }
+    
+    // Function to open the deployment modal
+    function openDeploymentModal() {
+        if (selectedSoldiers.length === 0) {
+            alert("Please select at least one soldier to deploy.");
+            return;
+        }
+        document.getElementById('selectedSoldierCount').textContent = selectedSoldiers.length;
+        document.getElementById('deploymentModal').style.display = 'block';
+    }
+    
+    // Function to submit deployment schedule
+    async function submitDeployment() {
+        const startTime = document.getElementById('startTimeInput').value;
+        const endTime = document.getElementById('endTimeInput').value;
+
+        if (!startTime || !endTime || selectedSoldiers.length === 0) {
+            alert("Please select soldiers and set valid start/end times.");
+            return;
+        }
+
+        const response = await fetch("/api/schedule-deployment", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                serviceNumbers: selectedSoldiers, 
+                startTime: startTime, 
+                endTime: endTime 
+            })
+        });
+
+        if (response.ok) {
+            alert("Deployment scheduled successfully!");
+            document.getElementById('deploymentModal').style.display = 'none';
+            selectedSoldiers = []; // Clear selection
+            fetchAllSoldierVitals(); // Refresh data
+        } else {
+            alert("Failed to schedule deployment.");
+        }
+    }
+    
+    // Renders the data table (FINAL CORRECTED VERSION - uses 10 columns)
+    function renderTable() {
+        const tbody = document.getElementById('soldierTableBody');
+        const showFieldOnly = document.getElementById('fieldFilter').checked;
+        let dataToRender = allSoldiersData;
+
+        // Filter by the new 'isCurrentlyDeployed' flag
+        if (showFieldOnly) {
+            dataToRender = allSoldiersData.filter(soldier => soldier.isCurrentlyDeployed);
+        }
+
+        tbody.innerHTML = ''; // Clear existing rows
+        const totalColumns = 10; 
+
+        if (dataToRender.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${totalColumns}" style="text-align: center; color: #ff3b3b;">${showFieldOnly ? 'No soldiers are currently active in their scheduled deployment.' : 'No soldiers registered or data failed to load.'}</td></tr>`;
+            return;
+        }
+        
+        // Ensure 'Select All' reflects the current selection state across all loaded data
+        document.getElementById('selectAll').checked = selectedSoldiers.length === allSoldiersData.length;
+
+        dataToRender.forEach(soldier => {
+            const row = document.createElement('tr');
+            const statusClass = getStatusClass(soldier.status);
+
+            const isSelected = selectedSoldiers.includes(soldier.serviceNumber) ? 'checked' : '';
+            
+            const deploymentEnd = soldier.deployment && soldier.deployment.endTime
+                                ? new Date(soldier.deployment.endTime).toLocaleString()
+                                : 'N/A';
+                              
+            const lastUpdated = soldier.vitals.timestamp ? new Date(soldier.vitals.timestamp).toLocaleTimeString() : '--';
+
+            row.innerHTML = `
+                <td>
+                    <input type="checkbox" ${isSelected} 
+                           data-service-number="${soldier.serviceNumber}"
+                           onclick="toggleSoldierSelection('${soldier.serviceNumber}', this.checked)">
+                </td>
+                <td>${soldier.serviceNumber}</td>
+                <td>${soldier.fullName}</td>
+                <td>${soldier.vitals.heartbeat}</td>
+                <td>${soldier.vitals.bp}</td>
+                <td>${soldier.vitals.temp}</td>
+                <td>${soldier.vitals.lat}, ${soldier.vitals.long}</td>
+                <td>${deploymentEnd}</td> 
+                <td class="status-cell ${statusClass}">${soldier.status.replace('_', ' ')}</td>
+                <td>${lastUpdated}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    // Fetches the data for all soldiers from the new API
+    async function fetchAllSoldierVitals() {
+        try {
+            const response = await fetch("/api/all-vitals");
+            if (!response.ok) {
+                if (response.status === 403) {
+                    window.location.href = '/login'; 
+                    return;
+                }
+                throw new Error("Failed to fetch all soldiers' vitals.");
+            }
+            allSoldiersData = await response.json();
+            
+            renderTable(); 
+            updateMap(); 
+
+        } catch (err) {
+            console.error("Error loading commander data:", err);
+            const tbody = document.getElementById('soldierTableBody');
+            // Ensure colspan is 10 here:
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #ff3b3b;">${err.message} Please check server logs.</td></tr>`; 
+        }
+    }
+
+    // --- Initialization ---
+    if (document.getElementById('soldierMap')) { 
+        initMap(); 
+    }
+    
+    setInterval(fetchAllSoldierVitals, 5000); 
+
+    // Initial load
+    fetchAllSoldierVitals();
+</script>
+</body>
+</html>

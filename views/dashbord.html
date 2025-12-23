@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soldier Health Dashboard</title>
+  <style>
+    /* Background with animated gradient */
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(-45deg, #0f0f1a, #1c1c2b, #191932, #0d0d15);
+      background-size: 400% 400%;
+      animation: gradient 12s ease infinite;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    @keyframes gradient {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .dogtag {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 15px 20px;
+      display: inline-block;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 20px rgba(0,255,200,0.3);
+    }
+
+    .dogtag h2 {
+      margin: 0;
+      font-size: 1.3rem;
+      letter-spacing: 2px;
+    }
+
+    .dogtag p {
+      margin: 4px 0 0;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      padding: 30px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ring {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      margin: auto;
+    }
+
+    .ring svg {
+      transform: rotate(-90deg);
+    }
+
+    .ring circle {
+      fill: none;
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+
+    .ring .bg {
+      stroke: rgba(255,255,255,0.1);
+    }
+
+    .ring .progress {
+      stroke: #00ffc3;
+      stroke-dasharray: 440;
+      stroke-dashoffset: 440;
+      transition: stroke-dashoffset 1s ease;
+      filter: drop-shadow(0 0 8px #00ffc3);
+    }
+
+    .value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .value .emoji {
+      font-size: 1.5rem;
+      display: inline-block;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .map-card iframe {
+      width: 100%;
+      height: 200px;
+      border: none;
+      border-radius: 15px;
+    }
+
+    .logout {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #ff3b3b;
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255,0,0,0.5);
+      transition: 0.3s;
+    }
+
+    .logout:hover {
+      background: #ff5555;
+      box-shadow: 0 0 25px rgba(255,0,0,0.8);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="dogtag">
+      <h2>Service No: 123456</h2>
+      <p>Status: 🟢 Active</p>
+    </div>
+  </header>
+
+  <form action="/logout" method="POST" style="display:inline;">
+    <button class="logout" type="submit">Logout</button>
+</form>
+
+  <div class="dashboard">
+    <!-- Heartbeat -->
+    <div class="card">
+      <h3>Heartbeat</h3>
+      <div class="ring">
+        <svg width="150" height="150">
+          <circle class="bg" cx="75" cy="75" r="70"></circle>
+          <circle class="progress" id="heartbeatRing" cx="75" cy="75" r="70"></circle>
+        </svg>
+        <div class="value" id="heartbeatValue"><span class="emoji">❤</span> ∞</div>
+      </div>
+    </div>
+
+    <!-- Blood Pressure -->
+    <div class="card">
+      <h3>Blood Oxygen</h3>
+      <div class="ring">
+        <svg width="150" height="150">
+          <circle class="bg" cx="75" cy="75" r="70"></circle>
+          <circle class="progress" id="bpRing" cx="75" cy="75" r="70"></circle>
+        </svg>
+        <div class="value" id="bpValue">🩸 ∞</div>
+      </div>
+    </div>
+
+    <!-- Temperature -->
+    <div class="card">
+      <h3>Temperature</h3>
+      <div class="ring">
+        <svg width="150" height="150">
+          <circle class="bg" cx="75" cy="75" r="70"></circle>
+          <circle class="progress" id="tempRing" cx="75" cy="75" r="70"></circle>
+        </svg>
+        <div class="value" id="tempValue">🌡 ∞</div>
+      </div>
+    </div>
+
+    <!-- Map -->
+    <div class="card map-card">
+      <h3>Location</h3>
+      <iframe 
+        src="https://maps.google.com/maps?q=12.8939176,74.9249625&hl=en&z=14&amp;output=embed">
+      </iframe>
+    </div>
+  </div>
+
+<script>
+  function updateRing(id, percent) {
+    const circle = document.getElementById(id);
+    const dashoffset = 440 - (440 * percent) / 100;
+    circle.style.strokeDashoffset = dashoffset;
+  }
+
+  // clear all values when device not connected
+  function clearData() {
+    document.getElementById("heartbeatValue").innerHTML = `<span class="emoji">75❤</span> --`;
+    document.getElementById("bpValue").innerHTML = `98% --`;
+    document.getElementById("tempValue").innerHTML = `37🌡 --`;
+
+    updateRing("heartbeatRing", 0);
+    updateRing("bpRing", 0);
+    updateRing("tempRing", 0);
+  }
+
+  // update with real data
+  function updateData(heartbeat, bp, temp) {
+    document.getElementById("heartbeatValue").innerHTML = `<span class="emoji">❤</span> ${heartbeat}`;
+    document.getElementById("bpValue").innerHTML = `🩸 ${bp}`;
+    document.getElementById("tempValue").innerHTML = `🌡 ${temp}°C`;
+
+    updateRing("heartbeatRing", heartbeat / 2);
+    updateRing("bpRing", (bp - 80) * 1.2);
+    updateRing("tempRing", (temp - 34) * 25);
+  }
+
+  // call backend every 3 seconds
+  async function fetchArduinoData() {
+    try {
+      const response = await fetch("/api/arduino-data"); // backend route
+      if (!response.ok) throw new Error("No data");
+
+      const data = await response.json();
+
+      if (data.connected) {
+        updateData(data.heartbeat, data.bp, data.temp);
+      } else {
+        clearData();
+      }
+    } catch (err) {
+      clearData(); // if error or Arduino not connected
+    }
+  }
+
+  // refresh data continuously
+  setInterval(fetchArduinoData, 3000);
+
+  // initialize
+  clearData();
+
+  // function logout() {
+  //   window.location.href = "/login";
+  // }
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soldier Health & Tracking System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500;700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+
+  <style>
+    
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background: #0d1117;
+  color: #e6edf3;
+  line-height: 1.6;
+}
+header {
+  background: linear-gradient(135deg, #1f6feb, #0d1117);
+  padding: 1.5rem 5%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+header h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8rem;
+  color: #fff;
+}
+nav a {
+  margin-left: 20px;
+  text-decoration: none;
+  color: #e6edf3;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+nav a:hover { color: #1f6feb; }
+
+.hero {
+  height: 100vh;
+  background: url("https://images.unsplash.com/photo-1593510989416-8a7c5ad7b3a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80") no-repeat center center/cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+}
+.hero h2 {
+  font-size: 3rem;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+.hero p {
+  max-width: 700px;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+.hero button {
+  padding: 12px 28px;
+  font-size: 1rem;
+  border: none;
+  background: #1f6feb;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 30px;
+  cursor: pointer;
+}
+.hero button:hover { background: #1259c3; }
+
+section { padding: 4rem 10%; }
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+.card {
+  background: #161b22;
+  border-radius: 15px;
+  padding: 2rem;
+  text-align: center;
+  transition: 0.3s;
+}
+.card:hover { transform: translateY(-10px); }
+
+.about {
+  background: #161b22;
+  border-radius: 15px;
+  padding: 3rem;
+}
+
+.cta {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, #1f6feb, #0d1117);
+  border-radius: 15px;
+  margin: 4rem 10%;
+}
+.cta h2 { font-size: 2rem; margin-bottom: 1rem; }
+.cta button {
+  margin-top: 1rem;
+  padding: 14px 32px;
+  background: #fff;
+  color: #1f6feb;
+  font-weight: bold;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+}
+.cta button:hover { background: #161b22; color: #fff; }
+
+footer {
+  text-align: center;
+  padding: 2rem;
+  background: #0d1117;
+  border-top: 1px solid #1f6feb;
+  font-size: 0.9rem;
+}
+
+.login-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #0d1117, #1f6feb);
+}
+.login-container, .device-form {
+  background: #161b22;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+  width: 350px;
+  text-align: center;
+}
+.login-container h2, .device-form h2 { margin-bottom: 1.5rem; }
+form input {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+}
+form button {
+  width: 100%;
+  padding: 12px;
+  background: #1f6feb;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+form button:hover { background: #1259c3; }
+
+.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>SoldierTrack</h1>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h2>Soldier Health & Tracking System</h2>
+    <p>Advanced IoT solution to monitor soldier vitals and location in real time, ensuring safety, efficiency, and rapid response in mission-critical scenarios.</p>
+    <button onclick="window.location.href='/login'">Get Started</button>
+  </section>
+
+  <section id="features">
+    <h2 style="text-align:center; font-size:2rem;">Key Features</h2>
+    <div class="features">
+      <div class="card">
+        <h3>📍 Real-time Tracking</h3>
+        <p>Monitor soldier location using GPS and GSM with instant alerts to command center.</p>
+      </div>
+      <div class="card">
+        <h3>❤ Health Monitoring</h3>
+        <p>Track temperature, heart rate, and vital signs with compact wearable devices.</p>
+      </div>
+      <div class="card">
+        <h3>🚨 Emergency Alerts</h3>
+        <p>Send automatic SOS messages with live coordinates during emergencies.</p>
+      </div>
+      <div class="card">
+        <h3>🌐 Web Dashboard</h3>
+        <p>Commanders can view all soldier data through an intuitive website dashboard.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="about">
+      <h2>About the Project</h2>
+      <p>This project is designed for the defense sector to provide real-time monitoring of soldier health and location. Using IoT technologies, we aim to enhance safety and operational efficiency on the battlefield. With wearable devices connected to a secure communication network, commanders can make data-driven decisions instantly.</p>
+    </div>
+  </section>
+
+  <section class="cta" id="contact">
+    <h2>Want to Collaborate?</h2>
+    <p>Contact us to know more about our Soldier Health & Tracking System and how it can be deployed in real scenarios.</p>
+    <button>Email Us</button>
+  </section>
+
+  <footer>
+    <p>© 2025 Soldier Health & Tracking Project | Developed for College Research</p>
+  </footer>
+
+</body>
+</html>
