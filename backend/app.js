@@ -39,7 +39,7 @@ app.post('/api/data-upload', async (req, res) => {
         const dataRecord = {
             deviceId: deviceId || "SOLDIER_UNIT_01", 
             heartbeat: Number(heartRate), // Mapping heartRate -> heartbeat
-            bp: 120,                      // Placeholder for oxygen/BP
+            bp: 98,                      // Placeholder for oxygen/BP
             temp: Number(temperature),    // Mapping temperature -> temp
             location: { lat: Number(lat), long: Number(lon) },
             timestamp: new Date()
