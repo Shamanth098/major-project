@@ -366,6 +366,7 @@ dashbordRouter.get("/api/all-vitals", async (req, res) => {
 
 // GET /api/arduino-data (Soldier's live data fetch)
 // GET /api/arduino-data (Soldier's live data fetch)
+// GET /api/arduino-data (Soldier's live data fetch)
 dashbordRouter.get("/api/arduino-data", async (req, res) => {
     if (!req.session.isLoggedIn || !req.session.user) {
         return res.json({ connected: false }); 
@@ -381,67 +382,51 @@ dashbordRouter.get("/api/arduino-data", async (req, res) => {
             .limit(1)
             .toArray();
 
-        const response = {
-            connected: latestData.length > 0,
-            serviceNumber: req.session.user.serviceNumber,
-        };
-
+        // --- NEW: CONNECTION TIMEOUT LOGIC ---
+        let isConnected = false;
         if (latestData.length > 0) {
+            const lastSeen = new Date(latestData[0].timestamp).getTime();
+            const now = new Date().getTime();
+            
+            // If the last update was within the last 60 seconds, it's "Connected"
+            if ((now - lastSeen) < 60000) { 
+                isConnected = true;
+            }
+        }
+
+        const response = {
+            connected: isConnected, // Will be false if device is off
+            serviceNumber: req.session.user.serviceNumber
+        };
+        
+        // Only provide data if the connection is active
+        if (isConnected) {
             const data = latestData[0];
-
-            // --- SPECIAL LOGIC FOR SOLDIER_UNIT_01 ---
+            
+            // SPECIAL SIMULATION FOR SOLDIER_UNIT_01
             if (soldierDeviceId === "SOLDIER_UNIT_01") {
-                
-                // 1. ENVIRONMENTAL MODE (Arduino sends 0 pulse)
-                if (data.heartbeat === 0) {
+                if (data.heartbeat === 0 || Math.random() < 0.10) {
                     Object.assign(response, {
-                        heartbeat: "--", // Show searching
-                        bp: "--",
-                        temp: data.temp, // Show ambient nature temp
-                        location: data.location
+                        heartbeat: "--", temp: data.temp, bp: "--", location: data.location
                     });
-                } 
-                // 2. HUMAN MODE (Arduino sends > 0 pulse)
-                else {
-                    // RANDOM "SEARCHING" CHANCE (approx 15% of the time show --)
-                    const showSearching = Math.random() < 0.15;
-
-                    if (showSearching) {
-                        Object.assign(response, {
-                            heartbeat: "--",
-                            bp: "--",
-                            temp: data.temp,
-                            location: data.location
-                        });
-                    } else {
-                        // NORMAL HUMAN DATA WITH 20s DRIFT
-                        // Add slight randomness so the value changes every fetch
-                        const hrDrift = Math.floor(Math.random() * 5) - 2; // -2 to +2
-                        const tempDrift = (Math.random() * 0.4 - 0.2); // -0.2 to +0.2
-                        
-                        Object.assign(response, {
-                            heartbeat: data.heartbeat + hrDrift,
-                            bp: "120/80", 
-                            temp: (data.temp + tempDrift).toFixed(1),
-                            location: data.location
-                        });
-                    }
+                } else {
+                    Object.assign(response, {
+                        heartbeat: data.heartbeat + (Math.floor(Math.random() * 3) - 1),
+                        bp: "120/80", temp: data.temp, location: data.location
+                    });
                 }
             } else {
-                // DEFAULT LOGIC FOR OTHER DEVICES
+                // Default data for other users
                 Object.assign(response, {
-                    heartbeat: data.heartbeat,
-                    bp: data.bp,
-                    temp: data.temp,
-                    location: data.location,
+                    heartbeat: data.heartbeat, bp: data.bp, temp: data.temp, location: data.location
                 });
             }
         }
         
         return res.json(response);
     } catch (err) {
-        console.error("Error fetching data for dashboard:", err);
-        res.json({ connected: false, serviceNumber: req.session.user.serviceNumber });
+        console.error("Error fetching data:", err);
+        res.json({ connected: false });
     }
 });
 
