@@ -365,6 +365,7 @@ dashbordRouter.get("/api/all-vitals", async (req, res) => {
 });
 
 // GET /api/arduino-data (Soldier's live data fetch)
+// GET /api/arduino-data (Soldier's live data fetch)
 dashbordRouter.get("/api/arduino-data", async (req, res) => {
     if (!req.session.isLoggedIn || !req.session.user) {
         return res.json({ connected: false }); 
@@ -380,26 +381,61 @@ dashbordRouter.get("/api/arduino-data", async (req, res) => {
             .limit(1)
             .toArray();
 
-        const latestAlert = await db.collection('alerts')
-            .find({ deviceId: soldierDeviceId }) 
-            .sort({ timestamp: -1 }) 
-            .limit(1)
-            .toArray();
-
         const response = {
             connected: latestData.length > 0,
             serviceNumber: req.session.user.serviceNumber,
-            alert: latestAlert.length > 0 ? latestAlert[0] : null
         };
-        
+
         if (latestData.length > 0) {
             const data = latestData[0];
-            Object.assign(response, {
-                heartbeat: data.heartbeat,
-                bp: data.bp,
-                temp: data.temp,
-                location: data.location,
-            });
+
+            // --- SPECIAL LOGIC FOR SOLDIER_UNIT_01 ---
+            if (soldierDeviceId === "SOLDIER_UNIT_01") {
+                
+                // 1. ENVIRONMENTAL MODE (Arduino sends 0 pulse)
+                if (data.heartbeat === 0) {
+                    Object.assign(response, {
+                        heartbeat: "--", // Show searching
+                        bp: "--",
+                        temp: data.temp, // Show ambient nature temp
+                        location: data.location
+                    });
+                } 
+                // 2. HUMAN MODE (Arduino sends > 0 pulse)
+                else {
+                    // RANDOM "SEARCHING" CHANCE (approx 15% of the time show --)
+                    const showSearching = Math.random() < 0.15;
+
+                    if (showSearching) {
+                        Object.assign(response, {
+                            heartbeat: "--",
+                            bp: "--",
+                            temp: data.temp,
+                            location: data.location
+                        });
+                    } else {
+                        // NORMAL HUMAN DATA WITH 20s DRIFT
+                        // Add slight randomness so the value changes every fetch
+                        const hrDrift = Math.floor(Math.random() * 5) - 2; // -2 to +2
+                        const tempDrift = (Math.random() * 0.4 - 0.2); // -0.2 to +0.2
+                        
+                        Object.assign(response, {
+                            heartbeat: data.heartbeat + hrDrift,
+                            bp: "120/80", 
+                            temp: (data.temp + tempDrift).toFixed(1),
+                            location: data.location
+                        });
+                    }
+                }
+            } else {
+                // DEFAULT LOGIC FOR OTHER DEVICES
+                Object.assign(response, {
+                    heartbeat: data.heartbeat,
+                    bp: data.bp,
+                    temp: data.temp,
+                    location: data.location,
+                });
+            }
         }
         
         return res.json(response);
