@@ -5,9 +5,9 @@ const session = require('express-session');
 const dashbordRouter = require("./routes/dashbord"); 
 const databaseUtil = require("./utils/databaseUtil"); 
 
-// --- 1. DEFINE ENVIRONMENT VARIABLES (ADD AT TOP) ---
+// --- 1. DEFINE ENVIRONMENT VARIABLES ---
 // These pull the values you set in Vercel's dashboard
-const deviceId = process.env.DEVICE_ID;
+const deviceId = process.env.DEVICE_ID || "SOLDIER_UNIT_01";
 const apiKey = process.env.API_KEY; 
 
 // Local Model
@@ -26,25 +26,44 @@ app.use(session({
 app.use(express.urlencoded({ extended: false })); 
 app.use(express.json()); // Essential for processing IoT JSON data
 
+// Static files (assuming your views folder is one level up from this file)
 app.use(express.static(path.join(__dirname, '../views')));
 
-// --- 2. IOT DATA UPLOAD ROUTE (ADD HERE) ---
-// This route is specifically for your ESP32 and A7670C module
-app.post('/api/data-upload', (req, res) => {
-    const incomingKey = req.headers['x-api-key']; // Key sent by ESP32
+// --- 2. IOT DATA UPLOAD ROUTE ---
+// This route matches your Arduino code and saves data to MongoDB
+app.post('/api/data-upload', async (req, res) => {
+    const incomingKey = req.headers['x-api-key']; // Key sent by Arduino
 
     // Security Check: Compare incoming key with Vercel's API_KEY
     if (incomingKey !== apiKey) {
-        console.warn(`[UNAUTHORIZED] Attempt to upload data to ${deviceId}`);
+        console.warn(`[UNAUTHORIZED] Attempt to upload data for ${deviceId}`);
         return res.status(401).json({ error: "Unauthorized access" });
     }
 
     // Success: Extract vitals and location from the request body
-    const { heartRate, spo2, temperature, lat, lon } = req.body;
-    console.log(`[DATA RECEIVED] ID: ${deviceId}, HR: ${heartRate}, SpO2: ${spo2}%`);
+    // We map the Arduino names (heartRate, temperature) to your dashboard names (heartbeat, temp)
+    const { heartRate, temperature, lat, lon } = req.body;
+    const db = databaseUtil.getDb();
 
-    // TODO: Add logic here to call databaseUtil to save this data
-    res.status(200).json({ status: "Success", message: "Vitals saved" });
+    try {
+        const dataRecord = {
+            deviceId: deviceId, 
+            heartbeat: Number(heartRate),
+            bp: 120, // Default/Placeholder as discussed
+            temp: Number(temperature),
+            location: { lat: Number(lat), long: Number(lon) },
+            timestamp: new Date()
+        };
+        
+        // Save to the 'vitals' collection
+        await db.collection('vitals').insertOne(dataRecord);
+        
+        console.log(`[DATA SAVED] ID: ${deviceId}, HR: ${heartRate}, Temp: ${temperature}`);
+        res.status(200).json({ status: "Success", message: "Vitals saved to database" });
+    } catch (err) {
+        console.error("Database save error:", err);
+        res.status(500).json({ status: "Error", message: "Failed to save data" });
+    }
 });
 
 // --- ROUTES ---
