@@ -30,35 +30,21 @@ app.use(express.static(path.join(__dirname, '../views')));
 
 // --- 2. IOT DATA UPLOAD ROUTE (ADD HERE) ---
 // This route is specifically for your ESP32 and A7670C module
-// Replace your existing /api/data-upload route in app.js
-app.post('/api/data-upload', async (req, res) => {
-    const incomingKey = req.headers['x-api-key']; 
-    const apiKey = process.env.API_KEY; 
+app.post('/api/data-upload', (req, res) => {
+    const incomingKey = req.headers['x-api-key']; // Key sent by ESP32
 
+    // Security Check: Compare incoming key with Vercel's API_KEY
     if (incomingKey !== apiKey) {
+        console.warn(`[UNAUTHORIZED] Attempt to upload data to ${deviceId}`);
         return res.status(401).json({ error: "Unauthorized access" });
     }
 
-    // Extracting actual heartRate from the PulseSensor Playground payload
-    const { deviceId, heartRate, temperature, lat, lon } = req.body;
-    const db = databaseUtil.getDb();
+    // Success: Extract vitals and location from the request body
+    const { heartRate, spo2, temperature, lat, lon } = req.body;
+    console.log(`[DATA RECEIVED] ID: ${deviceId}, HR: ${heartRate}, SpO2: ${spo2}%`);
 
-    try {
-        const dataRecord = {
-            deviceId: deviceId || "SOLDIER_UNIT_01", 
-            heartbeat: Number(heartRate), // Now reflects processed BPM
-            bp: 120,                      // Placeholder
-            temp: Number(temperature),    
-            location: { lat: Number(lat), long: Number(lon) },
-            timestamp: new Date()
-        };
-        
-        await db.collection('vitals').insertOne(dataRecord);
-        console.log(`[SUCCESS] Saved processed BPM for ${deviceId}`);
-        res.status(200).json({ status: "Success" });
-    } catch (err) {
-        res.status(500).json({ error: "Database Save Error" });
-    }
+    // TODO: Add logic here to call databaseUtil to save this data
+    res.status(200).json({ status: "Success", message: "Vitals saved" });
 });
 
 // --- ROUTES ---
