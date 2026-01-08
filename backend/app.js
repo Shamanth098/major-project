@@ -30,42 +30,34 @@ app.use(express.static(path.join(__dirname, '../views')));
 
 // --- 2. IOT DATA UPLOAD ROUTE (ADD HERE) ---
 // This route is specifically for your ESP32 and A7670C module
+// Replace your existing /api/data-upload route in app.js
 app.post('/api/data-upload', async (req, res) => {
     const incomingKey = req.headers['x-api-key']; 
+    const apiKey = process.env.API_KEY; 
 
-    // Security check: Match incoming key from Arduino/ESP32
     if (incomingKey !== apiKey) {
-        console.warn(`[UNAUTHORIZED] Access attempt with invalid key.`);
         return res.status(401).json({ error: "Unauthorized access" });
     }
 
-    // Success: Extract vitals from Arduino request body
+    // Extracting actual heartRate from the PulseSensor Playground payload
     const { deviceId, heartRate, temperature, lat, lon } = req.body;
     const db = databaseUtil.getDb();
 
     try {
-        // Prepare the data record for MongoDB
         const dataRecord = {
             deviceId: deviceId || "SOLDIER_UNIT_01", 
-            heartbeat: Number(heartRate), 
-            bp: 120,                      // Placeholder for oxygen/BP
-            temp: Number(temperature),   
-            location: { 
-                lat: Number(lat), 
-                long: Number(lon) 
-            },
-            timestamp: new Date()         // Automatically add a timestamp
+            heartbeat: Number(heartRate), // Now reflects processed BPM
+            bp: 120,                      // Placeholder
+            temp: Number(temperature),    
+            location: { lat: Number(lat), long: Number(lon) },
+            timestamp: new Date()
         };
         
-        // SAVE TO DATABASE: Insert into 'vitals' collection
         await db.collection('vitals').insertOne(dataRecord);
-        
-        console.log(`[SUCCESS] Vitals saved for Device: ${dataRecord.deviceId}`);
-        res.status(200).json({ status: "Success", message: "Vitals saved" });
-
+        console.log(`[SUCCESS] Saved processed BPM for ${deviceId}`);
+        res.status(200).json({ status: "Success" });
     } catch (err) {
-        console.error("Database Save Error:", err);
-        res.status(500).json({ error: "Failed to save data to database" });
+        res.status(500).json({ error: "Database Save Error" });
     }
 });
 
