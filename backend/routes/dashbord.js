@@ -171,6 +171,23 @@ dashbordRouter.post("/login", async (req, res) => {
   const db = databaseUtil.getDb();
   const { serviceNumber, password } = req.body;
 
+  // --- NEW: DEMO CONTROLLER BYPASS ---
+  // If the teacher uses 123456, skip database checks and go to controller
+  if (serviceNumber === "123456" && password === "123456") {
+      req.session.isLoggedIn = true;
+      req.session.user = { 
+          serviceNumber: "CONTROLLER", 
+          deviceId: "CONTROL_PANEL" 
+      };
+      
+      return req.session.save(err => {
+        if (err) console.error("Session save error:", err);
+        console.log("Demo Controller login successful.");
+        return res.redirect('/controller');
+      });
+  }
+  // --- END OF BYPASS ---
+
   try {
     const soldier = await db.collection('soldiers').findOne({ serviceNumber: serviceNumber });
 
@@ -429,6 +446,23 @@ dashbordRouter.get("/api/arduino-data", async (req, res) => {
         res.json({ connected: false });
     }
 });
+
+
+// --- ADD THIS AT THE BOTTOM OF dashbord.js ---
+
+// GET /controller - Loads the secret demo button page
+dashbordRouter.get("/controller", (req, res) => {
+    // Security check: only allow if logged in with 123456
+    if (!req.session.isLoggedIn || req.session.user.serviceNumber !== "CONTROLLER") {
+        return res.redirect('/login');
+    }
+    res.sendFile(path.join(__dirname, "../../views/controller.html"));
+});
+
+// =========================================================================
+// == 4. MODULE EXPORT (FINAL LINE) ==
+// =========================================================================
+module.exports = dashbordRouter;
 
 
 // =========================================================================
