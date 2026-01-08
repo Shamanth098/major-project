@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Demo Controller</title>
+    <style>
+        body { background: #0a192f; color: white; text-align: center; font-family: sans-serif; padding-top: 50px; }
+        button { width: 80%; padding: 20px; margin: 10px; font-size: 18px; border-radius: 10px; cursor: pointer; border: none; }
+        .btn-idle { background: #6c757d; }
+        .btn-vitals { background: #00ffcc; color: #0a192f; }
+        .btn-temp { background: #ff3b3b; }
+    </style>
+</head>
+<body>
+    <h2>Presentation Controller</h2>
+    <p>Device: SOLDIER_UNIT_01</p>
+    <button class="btn-idle" onclick="sendMode('idle')">1. IDLE MODE (Sensor not touched)</button>
+    <button class="btn-vitals" onclick="sendMode('vitals')">2. VITALS MODE (Teacher holding sensor)</button>
+    <button class="btn-temp" onclick="sendMode('temp')">3. TEMP MODE (Body Temperature)</button>
+
+    <script>
+        async function sendMode(modeType) {
+            await fetch('/api/demo-simulate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ mode: modeType })
+            });
+            alert("Mode Switched to: " + modeType);
+        }
+    </script>
+</body>
+</html>
