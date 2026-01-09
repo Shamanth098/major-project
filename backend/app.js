@@ -57,40 +57,40 @@ app.post('/api/data-upload', async (req, res) => {
     }
 });
 
-// --- 3. NEW: DEMO SIMULATOR ROUTE (For your "Secret" Controller) ---
-// This allows you to push data to the dashboard using buttons if hardware fails
+// --- UPDATED: DEMO CONTROLLER WITH TOGGLES ---
 app.post('/api/demo-simulate', async (req, res) => {
-    const { mode } = req.body;
+    const { type, status } = req.body; // e.g., type: 'heart', status: 'on'
     const db = databaseUtil.getDb();
     
-    // Base object for Soldier Unit 01
     let simulatedData = { 
         deviceId: "SOLDIER_UNIT_01", 
         timestamp: new Date(), 
         location: { lat: 12.9716, long: 77.5946 } 
     };
 
-    // Logic based on Button Clicks
-    if (mode === 'idle') {
-        // Mode 1: Device is on but not being touched
-        simulatedData.heartbeat = 0;
-        simulatedData.temp = 25.4; // Room temp
-        simulatedData.bp = 0;
-    } else if (mode === 'vitals') {
-        // Mode 2: Normal Human Heart Rate & Oxygen (SPO2 placeholder in BP field)
-        simulatedData.heartbeat = Math.floor(Math.random() * (82 - 72 + 1)) + 72; 
+    if (type === 'device' && status === 'off') {
+        // Simulates device being completely off (no data)
+        return res.json({ success: true, message: "Device Offline" });
+    }
+
+    // Default "Idle" values
+    simulatedData.heartbeat = 0; 
+    simulatedData.bp = 0;
+    simulatedData.temp = 25.5; // Room temperature
+
+    // Mode 2: Teacher holding Heartbeat Sensor
+    if (type === 'heart' && status === 'on') {
+        simulatedData.heartbeat = Math.floor(Math.random() * (85 - 72 + 1)) + 72; // 72-85 BPM
         simulatedData.bp = 98; // Simulating SpO2 98%
-        simulatedData.temp = 32.0; // Skin surface temp
-    } else if (mode === 'temp') {
-        // Mode 3: High/Normal Body Temperature
-        simulatedData.heartbeat = 76;
-        simulatedData.bp = 97;
-        simulatedData.temp = 37.2; // Fever/High Body Temp
+    } 
+
+    // Mode 3: Teacher holding Temperature Sensor
+    if (type === 'temp' && status === 'on') {
+        simulatedData.temp = (36.5 + (Math.random() * 0.7)).toFixed(1); // 36.5 - 37.2 °C
     }
 
     try {
         await db.collection('vitals').insertOne(simulatedData);
-        console.log(`[DEMO] Mode updated to: ${mode}`);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: "DB Error" });
