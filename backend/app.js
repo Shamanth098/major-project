@@ -57,42 +57,68 @@ app.post('/api/data-upload', async (req, res) => {
     }
 });
 
-// --- UPDATED: DEMO CONTROLLER WITH TOGGLES ---
+// --- UPDATED: FIXED DEMO CONTROLLER LOGIC ---
 app.post('/api/demo-simulate', async (req, res) => {
-    const { type, status } = req.body; // e.g., type: 'heart', status: 'on'
+    const { type, status } = req.body; 
     const db = databaseUtil.getDb();
     
-    let simulatedData = { 
-        deviceId: "SOLDIER_UNIT_01", 
-        timestamp: new Date(), 
-        location: { lat: 12.9716, long: 77.5946 } 
-    };
-
-    if (type === 'device' && status === 'off') {
-        // Simulates device being completely off (no data)
-        return res.json({ success: true, message: "Device Offline" });
-    }
-
-    // Default "Idle" values
-    simulatedData.heartbeat = 0; 
-    simulatedData.bp = 0;
-    simulatedData.temp = 25.5; // Room temperature
-
-    // Mode 2: Teacher holding Heartbeat Sensor
-    if (type === 'heart' && status === 'on') {
-        simulatedData.heartbeat = Math.floor(Math.random() * (85 - 72 + 1)) + 72; // 72-85 BPM
-        simulatedData.bp = 98; // Simulating SpO2 98%
-    } 
-
-    // Mode 3: Teacher holding Temperature Sensor
-    if (type === 'temp' && status === 'on') {
-        simulatedData.temp = (36.5 + (Math.random() * 0.7)).toFixed(1); // 36.5 - 37.2 °C
-    }
-
     try {
-        await db.collection('vitals').insertOne(simulatedData);
+        // 1. Fetch the VERY LATEST record from the database to see the current state
+        const lastRecord = await db.collection('vitals')
+            .find({ deviceId: "SOLDIER_UNIT_01" })
+            .sort({ timestamp: -1 })
+            .limit(1)
+            .toArray();
+
+        // 2. Start with the previous values or defaults
+        let currentData = lastRecord.length > 0 ? lastRecord[0] : {
+            heartbeat: 0,
+            bp: 0,
+            temp: 25.5
+        };
+
+        // 3. Create the new record
+        let newData = { 
+            deviceId: "SOLDIER_UNIT_01", 
+            timestamp: new Date(), 
+            location: { lat: 12.9716, long: 77.5946 },
+            heartbeat: currentData.heartbeat,
+            bp: currentData.bp,
+            temp: currentData.temp
+        };
+
+        // 4. Update ONLY what was clicked
+        if (type === 'device' && status === 'off') {
+            // When device is killed, we stop sending data records entirely
+            return res.json({ success: true, message: "Device Offline" });
+        }
+
+        if (type === 'heart') {
+            if (status === 'on') {
+                newData.heartbeat = Math.floor(Math.random() * (85 - 72 + 1)) + 72; // 72-85 BPM
+                newData.bp = 98; // Simulated SpO2
+            } else {
+                newData.heartbeat = 0;
+                newData.bp = 0;
+            }
+        } 
+
+        if (type === 'temp') {
+            if (status === 'on') {
+                newData.temp = Number((36.5 + (Math.random() * 0.7)).toFixed(1)); // Human Temp
+            } else {
+                newData.temp = 25.5; // Room Temp
+            }
+        }
+
+        // 5. Save the merged result
+        // Remove the old _id so MongoDB creates a new unique record
+        delete newData._id; 
+        await db.collection('vitals').insertOne(newData);
         res.json({ success: true });
+
     } catch (err) {
+        console.error("Simulation Error:", err);
         res.status(500).json({ error: "DB Error" });
     }
 });
