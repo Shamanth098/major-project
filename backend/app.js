@@ -57,42 +57,36 @@ app.post('/api/data-upload', async (req, res) => {
     }
 });
 
-// --- UPDATED: FIXED DEMO CONTROLLER LOGIC ---
 app.post('/api/demo-simulate', async (req, res) => {
-    const { type, status } = req.body; 
+    const { type, status } = req.body; // type: 'heart' or 'temp', status: 'on' or 'off'
     const db = databaseUtil.getDb();
     
     try {
-        // 1. Fetch the VERY LATEST record from the database to see the current state
+        // 1. Get the very latest record from the DB to see current states
         const lastRecord = await db.collection('vitals')
             .find({ deviceId: "SOLDIER_UNIT_01" })
             .sort({ timestamp: -1 })
             .limit(1)
             .toArray();
 
-        // 2. Start with the previous values or defaults
-        let currentData = lastRecord.length > 0 ? lastRecord[0] : {
+        // 2. Start with defaults or use previous values
+        let currentStatus = lastRecord.length > 0 ? lastRecord[0] : {
             heartbeat: 0,
             bp: 0,
             temp: 25.5
         };
 
-        // 3. Create the new record
+        // 3. Create the NEW record, copying the OLD values first
         let newData = { 
             deviceId: "SOLDIER_UNIT_01", 
             timestamp: new Date(), 
             location: { lat: 12.9716, long: 77.5946 },
-            heartbeat: currentData.heartbeat,
-            bp: currentData.bp,
-            temp: currentData.temp
+            heartbeat: currentStatus.heartbeat,
+            bp: currentStatus.bp,
+            temp: currentStatus.temp
         };
 
-        // 4. Update ONLY what was clicked
-        if (type === 'device' && status === 'off') {
-            // When device is killed, we stop sending data records entirely
-            return res.json({ success: true, message: "Device Offline" });
-        }
-
+        // 4. Update ONLY the sensor that was clicked
         if (type === 'heart') {
             if (status === 'on') {
                 newData.heartbeat = Math.floor(Math.random() * (85 - 72 + 1)) + 72; // 72-85 BPM
@@ -105,15 +99,14 @@ app.post('/api/demo-simulate', async (req, res) => {
 
         if (type === 'temp') {
             if (status === 'on') {
-                newData.temp = Number((36.5 + (Math.random() * 0.7)).toFixed(1)); // Human Temp
+                newData.temp = Number((36.5 + (Math.random() * 0.7)).toFixed(1)); // Body Temp
             } else {
-                newData.temp = 25.5; // Room Temp
+                newData.temp = 25.5; // Back to Room Temp
             }
         }
 
-        // 5. Save the merged result
-        // Remove the old _id so MongoDB creates a new unique record
-        delete newData._id; 
+        // 5. Save the updated data as a new entry
+        delete newData._id; // Ensure it doesn't try to reuse the old ID
         await db.collection('vitals').insertOne(newData);
         res.json({ success: true });
 
