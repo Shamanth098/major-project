@@ -102,7 +102,7 @@ app.post('/api/demo-simulate', async (req, res) => {
             if (status === 'on') {
                 newData.temp = Number((36.5 + (Math.random() * 0.7)).toFixed(1)); // Body Temp
             } else {
-                newData.temp = --; // Back to Room Temp
+                newData.temp = ; // Back to Room Temp
             }
         }
 
