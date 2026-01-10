@@ -117,6 +117,40 @@ app.post('/api/demo-simulate', async (req, res) => {
     }
 });
 
+
+app.get('/api/demo-simulate', async (req, res) => {
+    // This allows you to just click a link to update the data!
+    const type = req.query.type;
+    const status = req.query.status;
+    const db = databaseUtil.getDb();
+    
+    let simulatedData = { 
+        deviceId: "SOLDIER_UNIT_01", 
+        timestamp: new Date(), 
+        location: { lat: 12.9716, long: 77.5946 } 
+    };
+
+    if (type === 'heart' && status === 'on') {
+        simulatedData.heartbeat = 78;
+        simulatedData.bp = 98;
+        simulatedData.temp = 32.5;
+    } else if (type === 'temp' && status === 'on') {
+        simulatedData.heartbeat = 75;
+        simulatedData.temp = 37.1;
+    } else {
+        simulatedData.heartbeat = 0;
+        simulatedData.temp = 25.0;
+    }
+
+    try {
+        await db.collection('vitals').insertOne(simulatedData);
+        // This sends a message back to your phone browser
+        res.send("<h1>Update Successful!</h1><p>Check the dashboard now.</p>");
+    } catch (err) {
+        res.status(500).send("Database Error");
+    }
+});
+
 // --- 4. ROUTES & STARTUP ---
 app.use(dashbordRouter);
 
